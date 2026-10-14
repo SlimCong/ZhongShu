@@ -1,0 +1,886 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+<meta name="color-scheme" content="dark">
+<meta name="theme-color" content="#0a0c14">
+<title>SlimCong的个人中枢</title>
+<meta name="description" content="游戏、Wiki 与健康日志的统一入口。">
+<link rel="icon" href="data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 32 32'%3E%3Crect width='32' height='32' rx='9' fill='%23c9a96e'/%3E%3Ccircle cx='16' cy='16' r='6' fill='%230a0c14'/%3E%3C/svg%3E">
+<style>
+/* ============ 变量 ============ */
+:root{
+  --bg-deepest:#0a0c14;
+  --bg-surface:#10121c;
+  --bg-card:#161924;
+
+  --border:rgba(255,255,255,.06);
+  --border-hover:rgba(255,255,255,.12);
+
+  --text-primary:#e8eaf0;
+  --text-secondary:#8b8fa3;
+  --text-tertiary:#5a5f72;
+
+  --ok:#36F4A4;
+
+  --radius:14px;
+  --radius-lg:20px;
+
+  --ease:cubic-bezier(.2,.8,.2,1);
+}
+
+/* ============ 基础 ============ */
+*,*::before,*::after{box-sizing:border-box;}
+
+html{
+  -webkit-text-size-adjust:100%;
+  scroll-behavior:smooth;
+}
+
+body{
+  margin:0;
+  min-height:100vh;
+  background:var(--bg-deepest);
+  color:var(--text-primary);
+  font-family:-apple-system,BlinkMacSystemFont,"SF Pro Display","Segoe UI",
+              "PingFang SC","Hiragino Sans GB","Microsoft YaHei",sans-serif;
+  font-size:16px;
+  line-height:1.6;
+  -webkit-font-smoothing:antialiased;
+  -moz-osx-font-smoothing:grayscale;
+  overflow-x:hidden;
+}
+
+a{color:inherit;}
+
+::selection{
+  background:rgba(201,169,110,.3);
+  color:#fff;
+}
+
+/* ============ 背景层 ============ */
+.bg{
+  position:fixed;
+  inset:0;
+  z-index:0;
+  pointer-events:none;
+}
+
+.bg-aurora{
+  background:
+    radial-gradient(640px circle at 12% 6%, rgba(201,169,110,.10), transparent 62%),
+    radial-gradient(720px circle at 88% 14%, rgba(125,230,216,.075), transparent 62%),
+    radial-gradient(900px circle at 50% 108%, rgba(139,124,246,.08), transparent 65%);
+}
+
+.bg-grid{
+  background-image:
+    linear-gradient(rgba(255,255,255,.022) 1px, transparent 1px),
+    linear-gradient(90deg, rgba(255,255,255,.022) 1px, transparent 1px);
+  background-size:64px 64px;
+  -webkit-mask-image:radial-gradient(ellipse 85% 55% at 50% 0%, #000 25%, transparent 100%);
+  mask-image:radial-gradient(ellipse 85% 55% at 50% 0%, #000 25%, transparent 100%);
+}
+
+.bg-noise{
+  z-index:3;
+  opacity:.035;
+  background-image:url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='200' height='200'%3E%3Cfilter id='n'%3E%3CfeTurbulence type='fractalNoise' baseFrequency='0.85' numOctaves='3' stitchTiles='stitch'/%3E%3C/filter%3E%3Crect width='200' height='200' filter='url(%23n)'/%3E%3C/svg%3E");
+}
+
+.bg-cursor{
+  position:fixed;
+  top:0;
+  left:0;
+  width:620px;
+  height:620px;
+  border-radius:50%;
+  background:radial-gradient(circle, rgba(126,146,255,.07), transparent 66%);
+  pointer-events:none;
+  z-index:1;
+  opacity:0;
+  transition:opacity .6s ease;
+  will-change:transform;
+}
+
+.bg-cursor.is-active{opacity:1;}
+
+/* ============ 导航 ============ */
+.nav{
+  position:fixed;
+  top:0;
+  left:0;
+  right:0;
+  z-index:50;
+  height:68px;
+  display:flex;
+  align-items:center;
+  justify-content:space-between;
+  padding:0 clamp(20px,4vw,40px);
+  border-bottom:1px solid transparent;
+  transition:background .35s ease, backdrop-filter .35s ease,
+             border-color .35s ease;
+}
+
+.nav.is-scrolled{
+  background:rgba(10,12,20,.72);
+  -webkit-backdrop-filter:blur(20px) saturate(160%);
+  backdrop-filter:blur(20px) saturate(160%);
+  border-bottom-color:var(--border);
+}
+
+.brand{
+  display:flex;
+  align-items:center;
+  gap:10px;
+  text-decoration:none;
+  color:inherit;
+}
+
+.brand-mark{
+  width:30px;
+  height:30px;
+  border-radius:9px;
+  display:grid;
+  place-items:center;
+  color:#0a0c14;
+  background:linear-gradient(135deg,#ecd9ae,#c9a96e);
+  box-shadow:0 0 22px -4px rgba(201,169,110,.6);
+}
+
+.brand-text{
+  font-size:15px;
+  font-weight:600;
+  letter-spacing:.02em;
+}
+
+.nav-links{
+  display:flex;
+  gap:2px;
+}
+
+.nav-links a{
+  padding:8px 14px;
+  font-size:13.5px;
+  color:var(--text-secondary);
+  text-decoration:none;
+  border-radius:8px;
+  transition:color .25s ease, background .25s ease;
+}
+
+.nav-links a:hover{
+  color:var(--text-primary);
+  background:rgba(255,255,255,.05);
+}
+
+/* ============ 主内容 ============ */
+main,footer{
+  position:relative;
+  z-index:10;
+}
+
+/* ---- Hero ---- */
+.hero{
+  padding:clamp(136px,19vh,196px) clamp(20px,4vw,40px) clamp(52px,7vh,84px);
+}
+
+.hero-inner{
+  max-width:1160px;
+  margin:0 auto;
+}
+
+.hero-eyebrow{
+  display:inline-flex;
+  align-items:center;
+  gap:9px;
+  padding:6px 14px 6px 11px;
+  border-radius:999px;
+  border:1px solid rgba(255,255,255,.08);
+  background:rgba(255,255,255,.03);
+  font-size:11px;
+  font-weight:600;
+  letter-spacing:.16em;
+  color:var(--text-secondary);
+  text-transform:uppercase;
+  animation:riseIn .9s var(--ease) backwards;
+}
+
+.pulse{
+  width:6px;
+  height:6px;
+  border-radius:50%;
+  background:var(--ok);
+  animation:pulseRing 2.6s ease-out infinite;
+}
+
+@keyframes pulseRing{
+  0%{box-shadow:0 0 0 0 rgba(54,244,164,.55);}
+  70%{box-shadow:0 0 0 9px rgba(54,244,164,0);}
+  100%{box-shadow:0 0 0 0 rgba(54,244,164,0);}
+}
+
+.hero-title{
+  margin:22px 0 0;
+  font-size:clamp(46px,8.6vw,104px);
+  font-weight:800;
+  line-height:1.02;
+  letter-spacing:-.035em;
+  background:linear-gradient(168deg,#ffffff 0%,#d3d8e6 42%,#767d95 100%);
+  -webkit-background-clip:text;
+  background-clip:text;
+  -webkit-text-fill-color:transparent;
+  color:transparent;
+  animation:riseIn .9s var(--ease) .08s backwards;
+}
+
+.hero-sub{
+  margin:26px 0 0;
+  max-width:40ch;
+  font-size:clamp(15px,1.6vw,19px);
+  line-height:1.75;
+  color:var(--text-secondary);
+  animation:riseIn .9s var(--ease) .16s backwards;
+}
+
+.hero-meta{
+  margin-top:34px;
+  display:flex;
+  align-items:center;
+  gap:12px;
+  font-size:13px;
+  letter-spacing:.02em;
+  color:var(--text-tertiary);
+  animation:riseIn .9s var(--ease) .24s backwards;
+}
+
+.dot-sep{
+  width:3px;
+  height:3px;
+  border-radius:50%;
+  background:currentColor;
+  opacity:.55;
+}
+
+@keyframes riseIn{
+  from{opacity:0;transform:translateY(18px);}
+  to{opacity:1;transform:none;}
+}
+
+/* ---- 卡片网格 ---- */
+.grid{
+  max-width:1160px;
+  margin:0 auto;
+  padding:0 clamp(20px,4vw,40px) clamp(90px,12vh,140px);
+  display:grid;
+  grid-template-columns:repeat(12,1fr);
+  gap:18px;
+}
+
+.card{
+  position:relative;
+  grid-column:span 6;
+  display:flex;
+  flex-direction:column;
+  gap:14px;
+  min-height:254px;
+  padding:28px;
+  border-radius:var(--radius-lg);
+  border:1px solid var(--border);
+  background:linear-gradient(180deg, rgba(255,255,255,.038), rgba(255,255,255,.008));
+  text-decoration:none;
+  color:inherit;
+  overflow:hidden;
+  isolation:isolate;
+  transition:transform .5s var(--ease),
+             border-color .5s ease,
+             box-shadow .5s ease;
+  animation:cardIn .85s var(--ease) backwards;
+}
+
+.card--wide{grid-column:span 7;}
+.card--narrow{grid-column:span 5;}
+
+.card:nth-child(1){animation-delay:.16s;}
+.card:nth-child(2){animation-delay:.24s;}
+.card:nth-child(3){animation-delay:.32s;}
+.card:nth-child(4){animation-delay:.40s;}
+
+@keyframes cardIn{
+  from{opacity:0;transform:translateY(26px) scale(.985);}
+  to{opacity:1;transform:none;}
+}
+
+.card::before{
+  content:"";
+  position:absolute;
+  top:0;left:0;right:0;
+  height:1px;
+  background:linear-gradient(90deg,transparent,var(--accent),transparent);
+  opacity:0;
+  transition:opacity .5s ease;
+}
+
+.card::after{
+  content:"";
+  position:absolute;
+  top:-130px;
+  right:-130px;
+  width:300px;
+  height:300px;
+  border-radius:50%;
+  background:radial-gradient(circle, var(--accent-glow), transparent 68%);
+  opacity:0;
+  z-index:-1;
+  pointer-events:none;
+  transition:opacity .55s ease;
+}
+
+.card:hover{
+  transform:translateY(-5px);
+  border-color:var(--accent-line);
+  box-shadow:0 28px 60px -28px rgba(0,0,0,.92);
+}
+
+.card:hover::before{opacity:.85;}
+.card:hover::after{opacity:1;}
+
+.card:focus-visible{
+  outline:2px solid var(--accent);
+  outline-offset:3px;
+}
+
+.card--game{
+  --accent:#c9a96e;
+  --accent-soft:rgba(201,169,110,.13);
+  --accent-line:rgba(201,169,110,.34);
+  --accent-glow:rgba(201,169,110,.16);
+}
+.card--online{
+  --accent:#8b7cf6;
+  --accent-soft:rgba(139,124,246,.13);
+  --accent-line:rgba(139,124,246,.34);
+  --accent-glow:rgba(139,124,246,.16);
+}
+.card--wiki{
+  --accent:#7de6d8;
+  --accent-soft:rgba(125,230,216,.12);
+  --accent-line:rgba(125,230,216,.32);
+  --accent-glow:rgba(125,230,216,.15);
+}
+.card--health{
+  --accent:#36F4A4;
+  --accent-soft:rgba(54,244,164,.12);
+  --accent-line:rgba(54,244,164,.32);
+  --accent-glow:rgba(54,244,164,.15);
+}
+
+.card-top{
+  display:flex;
+  align-items:flex-start;
+  justify-content:space-between;
+  gap:16px;
+}
+
+.card-icon{
+  width:44px;
+  height:44px;
+  flex:none;
+  display:grid;
+  place-items:center;
+  border-radius:13px;
+  color:var(--accent);
+  background:var(--accent-soft);
+  border:1px solid var(--accent-line);
+  transition:transform .5s var(--ease), box-shadow .5s ease;
+}
+
+.card:hover .card-icon{
+  transform:scale(1.07);
+  box-shadow:0 0 26px -6px var(--accent);
+}
+
+.status{
+  display:inline-flex;
+  align-items:center;
+  gap:6px;
+  padding-top:4px;
+  font-size:11.5px;
+  letter-spacing:.05em;
+  color:var(--text-tertiary);
+  white-space:nowrap;
+  transition:color .4s ease;
+}
+
+.status-dot{
+  width:6px;
+  height:6px;
+  border-radius:50%;
+  background:#3d4254;
+  transition:background .4s ease, box-shadow .4s ease;
+}
+
+.status.is-online{color:rgba(54,244,164,.85);}
+.status.is-online .status-dot{
+  background:var(--ok);
+  box-shadow:0 0 9px rgba(54,244,164,.75);
+}
+
+.card-title{
+  margin:6px 0 0;
+  font-size:22px;
+  font-weight:600;
+  line-height:1.32;
+  letter-spacing:-.01em;
+}
+
+.card-desc{
+  margin:0;
+  flex:1;
+  max-width:48ch;
+  font-size:14px;
+  line-height:1.75;
+  color:var(--text-secondary);
+}
+
+.card-bottom{
+  display:flex;
+  align-items:center;
+  justify-content:space-between;
+  gap:16px;
+  padding-top:16px;
+  border-top:1px solid rgba(255,255,255,.05);
+  transition:border-color .5s ease;
+}
+
+.card:hover .card-bottom{
+  border-color:rgba(255,255,255,.09);
+}
+
+.card-tag{
+  font-size:11.5px;
+  letter-spacing:.09em;
+  color:var(--text-tertiary);
+}
+
+.card-cta{
+  display:inline-flex;
+  align-items:center;
+  gap:6px;
+  font-size:13px;
+  font-weight:600;
+  color:var(--text-secondary);
+  transition:color .35s ease, gap .35s var(--ease);
+}
+
+.card-cta svg{
+  transition:transform .35s var(--ease);
+}
+
+.card:hover .card-cta{
+  color:var(--accent);
+  gap:10px;
+}
+
+.card:hover .card-cta svg{
+  transform:translateX(2px);
+}
+
+/* ---- 页脚 ---- */
+.footer{
+  border-top:1px solid rgba(255,255,255,.05);
+  padding:30px clamp(20px,4vw,40px) 46px;
+}
+
+.footer-inner{
+  max-width:1160px;
+  margin:0 auto;
+  display:flex;
+  align-items:center;
+  justify-content:space-between;
+  gap:18px;
+  flex-wrap:wrap;
+  font-size:12.5px;
+  color:var(--text-tertiary);
+}
+
+.footer-links{
+  display:flex;
+  gap:20px;
+}
+
+.footer-links a{
+  color:var(--text-tertiary);
+  text-decoration:none;
+  transition:color .25s ease;
+}
+
+.footer-links a:hover{color:var(--text-secondary);}
+
+/* ============ 响应式 ============ */
+@media (max-width:980px){
+  .grid > .card{grid-column:span 12;}
+  .card{min-height:auto;}
+}
+
+@media (max-width:720px){
+  .nav-links{display:none;}
+  .card{padding:24px;border-radius:18px;}
+  .card-title{font-size:20px;}
+  .footer-inner{flex-direction:column;align-items:flex-start;gap:14px;}
+}
+
+/* ============ 无障碍 ============ */
+@media (prefers-reduced-motion: reduce){
+  html{scroll-behavior:auto;}
+  *,*::before,*::after{
+    animation-duration:.01ms !important;
+    animation-iteration-count:1 !important;
+    transition-duration:.01ms !important;
+  }
+}
+</style>
+</head>
+
+<body>
+
+<!-- 背景 -->
+<div class="bg bg-aurora"></div>
+<div class="bg bg-grid"></div>
+<div class="bg bg-noise"></div>
+<div class="bg-cursor" id="cursorGlow"></div>
+
+<!-- 导航 -->
+<header class="nav" id="nav">
+  <a class="brand" href="#top">
+    <span class="brand-mark">
+      <svg width="16" height="16" viewBox="0 0 24 24" fill="none"
+           stroke="currentColor" stroke-width="2.2"
+           stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">
+        <rect x="3" y="3" width="7.5" height="7.5" rx="2"/>
+        <rect x="13.5" y="3" width="7.5" height="7.5" rx="2"/>
+        <rect x="3" y="13.5" width="7.5" height="7.5" rx="2"/>
+        <rect x="13.5" y="13.5" width="7.5" height="7.5" rx="2"/>
+      </svg>
+    </span>
+    <span class="brand-text">SlimCong的个人中枢</span>
+  </a>
+  <nav class="nav-links">
+    <a href="#projects">项目</a>
+    <a href="https://slimcong.github.io/ZhouZhiLi/" target="_blank" rel="noopener noreferrer">游戏</a>
+    <a href="https://slimcong.github.io/ZhouLi.Wiki/#sec-ministers" target="_blank" rel="noopener noreferrer">Wiki</a>
+    <a href="https://slimcong.github.io/WoDeJianKangRiZhi/#sec-ministers" target="_blank" rel="noopener noreferrer">健康</a>
+  </nav>
+</header>
+
+<main id="top">
+
+  <!-- Hero -->
+  <section class="hero">
+    <div class="hero-inner">
+      <div class="hero-eyebrow">
+        <span class="pulse"></span>
+        Personal Hub
+      </div>
+
+      <h1 class="hero-title">SlimCong的个人中枢</h1>
+
+      <p class="hero-sub">
+        游戏、规则文档与健康记录，都在同一个入口。打开这一个页面，就能去任何地方。
+      </p>
+
+      <div class="hero-meta">
+        <span id="greeting">你好</span>
+        <span class="dot-sep"></span>
+        <span id="clock">--:--</span>
+      </div>
+    </div>
+  </section>
+
+  <!-- 项目卡片 -->
+  <section class="grid" id="projects">
+
+    <!-- 周之礼游戏 -->
+    <a class="card card--game card--wide"
+       href="https://slimcong.github.io/ZhouZhiLi/"
+       target="_blank" rel="noopener noreferrer">
+      <div class="card-top">
+        <span class="card-icon">
+          <svg width="22" height="22" viewBox="0 0 24 24" fill="none"
+               stroke="currentColor" stroke-width="1.6"
+               stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">
+            <circle cx="12" cy="7" r="3.2"/>
+            <path d="M8.8 10.4h6.4l1.1 6.2H7.7l1.1-6.2z"/>
+            <path d="M5.5 19.5h13"/>
+          </svg>
+        </span>
+        <span class="status" data-url="https://slimcong.github.io/ZhouZhiLi/">
+          <span class="status-dot"></span>
+          <span class="status-text">检测中</span>
+        </span>
+      </div>
+
+      <h2 class="card-title">周之礼游戏</h2>
+      <p class="card-desc">选国、开局、出牌。一局完整的策略对战，打开浏览器就能玩。</p>
+
+      <div class="card-bottom">
+        <span class="card-tag">策略对战 · 单机</span>
+        <span class="card-cta">
+          进入
+          <svg width="14" height="14" viewBox="0 0 24 24" fill="none"
+               stroke="currentColor" stroke-width="2.2"
+               stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">
+            <path d="M5 12h13M13 6l6 6-6 6"/>
+          </svg>
+        </span>
+      </div>
+    </a>
+
+    <!-- 联机版 -->
+    <a class="card card--online card--narrow"
+       href="https://8.163.88.96:8787/index.html"
+       target="_blank" rel="noopener noreferrer">
+      <div class="card-top">
+        <span class="card-icon">
+          <svg width="22" height="22" viewBox="0 0 24 24" fill="none"
+               stroke="currentColor" stroke-width="1.6"
+               stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">
+            <circle cx="12" cy="12" r="2.4"/>
+            <circle cx="5" cy="5" r="2"/>
+            <circle cx="19" cy="5" r="2"/>
+            <circle cx="5" cy="19" r="2"/>
+            <circle cx="19" cy="19" r="2"/>
+            <path d="M10.3 10.3 6.5 6.5M13.7 10.3l3.8-3.8M10.3 13.7l-3.8 3.8M13.7 13.7l3.8 3.8"/>
+          </svg>
+        </span>
+        <span class="status" data-url="https://8.163.88.96:8787/index.html">
+          <span class="status-dot"></span>
+          <span class="status-text">检测中</span>
+        </span>
+      </div>
+
+      <h2 class="card-title">周之礼 · 联机版</h2>
+      <p class="card-desc">和好友同场对弈，实时同步。需要联机服务在线。</p>
+
+      <div class="card-bottom">
+        <span class="card-tag">实时联机</span>
+        <span class="card-cta">
+          进入
+          <svg width="14" height="14" viewBox="0 0 24 24" fill="none"
+               stroke="currentColor" stroke-width="2.2"
+               stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">
+            <path d="M5 12h13M13 6l6 6-6 6"/>
+          </svg>
+        </span>
+      </div>
+    </a>
+
+    <!-- Wiki -->
+    <a class="card card--wiki card--narrow"
+       href="https://slimcong.github.io/ZhouLi.Wiki/#sec-ministers"
+       target="_blank" rel="noopener noreferrer">
+      <div class="card-top">
+        <span class="card-icon">
+          <svg width="22" height="22" viewBox="0 0 24 24" fill="none"
+               stroke="currentColor" stroke-width="1.6"
+               stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">
+            <path d="M4 19.5A2.5 2.5 0 0 1 6.5 17H20"/>
+            <path d="M6.5 2H20v20H6.5A2.5 2.5 0 0 1 4 19.5v-15A2.5 2.5 0 0 1 6.5 2z"/>
+            <path d="M9 7h6"/>
+          </svg>
+        </span>
+        <span class="status" data-url="https://slimcong.github.io/ZhouLi.Wiki/">
+          <span class="status-dot"></span>
+          <span class="status-text">检测中</span>
+        </span>
+      </div>
+
+      <h2 class="card-title">周之礼 Wiki</h2>
+      <p class="card-desc">规则、胜利条件、回合流程与卡牌细节，随时查阅。</p>
+
+      <div class="card-bottom">
+        <span class="card-tag">规则文档</span>
+        <span class="card-cta">
+          进入
+          <svg width="14" height="14" viewBox="0 0 24 24" fill="none"
+               stroke="currentColor" stroke-width="2.2"
+               stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">
+            <path d="M5 12h13M13 6l6 6-6 6"/>
+          </svg>
+        </span>
+      </div>
+    </a>
+
+    <!-- 健康日志 -->
+    <a class="card card--health card--wide"
+       href="https://slimcong.github.io/WoDeJianKangRiZhi/#sec-ministers"
+       target="_blank" rel="noopener noreferrer">
+      <div class="card-top">
+        <span class="card-icon">
+          <svg width="22" height="22" viewBox="0 0 24 24" fill="none"
+               stroke="currentColor" stroke-width="1.8"
+               stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">
+            <path d="M3 12h4l2.5-6 4 12 2.5-6h5"/>
+          </svg>
+        </span>
+        <span class="status" data-url="https://slimcong.github.io/WoDeJianKangRiZhi/">
+          <span class="status-dot"></span>
+          <span class="status-text">检测中</span>
+        </span>
+      </div>
+
+      <h2 class="card-title">健康日志</h2>
+      <p class="card-desc">饮水、睡眠、运动、饮食与身体状态，一天一记，看得见的变化。</p>
+
+      <div class="card-bottom">
+        <span class="card-tag">日常记录</span>
+        <span class="card-cta">
+          进入
+          <svg width="14" height="14" viewBox="0 0 24 24" fill="none"
+               stroke="currentColor" stroke-width="2.2"
+               stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">
+            <path d="M5 12h13M13 6l6 6-6 6"/>
+          </svg>
+        </span>
+      </div>
+    </a>
+
+  </section>
+</main>
+
+<!-- 页脚 -->
+<footer class="footer">
+  <div class="footer-inner">
+    <span>SlimCong的个人中枢 · Personal Hub</span>
+    <div class="footer-links">
+      <a href="https://github.com/slimcong" target="_blank" rel="noopener noreferrer">GitHub</a>
+      <a href="#top">回到顶部</a>
+    </div>
+  </div>
+</footer>
+
+<script>
+(function () {
+  'use strict';
+
+  /* ---------- 导航滚动 ---------- */
+  var nav = document.getElementById('nav');
+  function onScroll() {
+    if (window.scrollY > 12) nav.classList.add('is-scrolled');
+    else nav.classList.remove('is-scrolled');
+  }
+  onScroll();
+  window.addEventListener('scroll', onScroll, { passive: true });
+
+  /* ---------- 问候语 + 时钟 ---------- */
+  var greetEl = document.getElementById('greeting');
+  var clockEl = document.getElementById('clock');
+
+  function tick() {
+    var d = new Date();
+    var h = d.getHours();
+    var g;
+
+    if (h < 5)       g = '夜深了';
+    else if (h < 11) g = '早上好';
+    else if (h < 14) g = '中午好';
+    else if (h < 18) g = '下午好';
+    else if (h < 23) g = '晚上好';
+    else             g = '夜深了';
+
+    greetEl.textContent = g;
+    clockEl.textContent =
+      String(d.getHours()).padStart(2, '0') + ':' +
+      String(d.getMinutes()).padStart(2, '0');
+  }
+
+  tick();
+  setInterval(tick, 10000);
+
+  /* ---------- 鼠标跟随光晕 ---------- */
+  if (window.matchMedia('(pointer: fine)').matches) {
+    var glow = document.getElementById('cursorGlow');
+    var tx = window.innerWidth * 0.5;
+    var ty = window.innerHeight * 0.28;
+    var cx = tx, cy = ty;
+    var rafId = null;
+    var activated = false;
+
+    function loop() {
+      cx += (tx - cx) * 0.12;
+      cy += (ty - cy) * 0.12;
+      glow.style.transform =
+        'translate3d(' + cx + 'px,' + cy + 'px,0) translate(-50%,-50%)';
+
+      if (Math.abs(tx - cx) > 0.5 || Math.abs(ty - cy) > 0.5) {
+        rafId = requestAnimationFrame(loop);
+      } else {
+        rafId = null;
+      }
+    }
+
+    window.addEventListener('pointermove', function (e) {
+      tx = e.clientX;
+      ty = e.clientY;
+
+      if (!activated) {
+        activated = true;
+        glow.classList.add('is-active');
+      }
+      if (!rafId) rafId = requestAnimationFrame(loop);
+    }, { passive: true });
+
+    glow.style.transform =
+      'translate3d(' + cx + 'px,' + cy + 'px,0) translate(-50%,-50%)';
+  }
+
+  /* ---------- 项目状态探测 ---------- */
+  var statusEls = document.querySelectorAll('.status[data-url]');
+
+  function probe(url) {
+    return new Promise(function (resolve) {
+      var ctrl = new AbortController();
+      var timer = setTimeout(function () { ctrl.abort(); }, 7000);
+
+      fetch(url, {
+        mode: 'no-cors',
+        cache: 'no-store',
+        redirect: 'follow',
+        signal: ctrl.signal
+      })
+        .then(function () {
+          clearTimeout(timer);
+          resolve(true);
+        })
+        .catch(function () {
+          clearTimeout(timer);
+          resolve(false);
+        });
+    });
+  }
+
+  function runChecks() {
+    statusEls.forEach(function (el) {
+      var url = el.getAttribute('data-url');
+      var textEl = el.querySelector('.status-text');
+
+      probe(url).then(function (ok) {
+        el.classList.add(ok ? 'is-online' : 'is-offline');
+        textEl.textContent = ok ? '在线' : '未响应';
+      });
+    });
+  }
+
+  if ('fetch' in window && statusEls.length) {
+    setTimeout(runChecks, 400);
+  } else {
+    statusEls.forEach(function (el) {
+      el.querySelector('.status-text').textContent = '—';
+    });
+  }
+
+})();
+</script>
+
+</body>
+</html>
